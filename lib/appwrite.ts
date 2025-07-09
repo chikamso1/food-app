@@ -49,22 +49,48 @@ export const signIn = async ({ email, password }: SignInParams) => {
     }
 }
 
+// export const getCurrentUser = async () => {
+//     try {
+//         const currentAccount = await account.get()
+//         if(!currentAccount) throw Error;
+
+//         const currentuser = await databases.listDocuments(
+//             appwriteConfig.databaseId,
+//             appwriteConfig.userCollectionId,
+//             [Query.equal('accountId', currentAccount.$id)]
+//         )
+
+//         if(!currentuser) throw Error;
+
+//         return currentuser.documents[0]
+//     } catch (error) {
+//         console.log(error)
+//         throw new Error(error as string)
+//     }
+// }
+
 export const getCurrentUser = async () => {
     try {
-        const currentAccount = await account.get()
-        if(!currentAccount) throw Error;
+        // Check if the user is signed in
+        const currentSession = await account.getSession('current'); // Get the current session
+        if (!currentSession) throw new Error("User is not authenticated");
 
+        // Fetch the authenticated account
+        const currentAccount = await account.get();
+        if (!currentAccount) throw new Error("Account not found");
+
+        // Fetch the user's data from the database
         const currentuser = await databases.listDocuments(
             appwriteConfig.databaseId,
             appwriteConfig.userCollectionId,
-            [Query.equal('id', currentAccount.$id)]
-        )
+            [Query.equal('accountId', currentAccount.$id)] // Ensure you query by `accountId`
+        );
 
-        if(!currentuser) throw Error;
+        if (!currentuser.documents.length) throw new Error("User data not found");
 
-        return currentuser.documents[0]
+        return currentuser.documents[0];
     } catch (error) {
-        console.log(error)
-        throw new Error(error as string)
+        console.error(error);
+        throw new Error(error instanceof Error ? error.message : "Unknown error");
     }
 }
